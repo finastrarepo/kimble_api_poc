@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xmlns:http="http://www.mulesoft.org/schema/mule/http"
+	xmlns="http://www.mulesoft.org/schema/mule/core"
+	xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+	<http:listener-config name="HTTP_Listener_config" doc:name="HTTP Listener config" doc:id="ddf0dc63-258b-4876-b07c-9fbf0d7f7269" >
+		<http:listener-connection host="0.0.0.0" port="8081" />
+	</http:listener-config>
+	<http:request-config name="HTTP_Request_configuration" doc:name="HTTP Request configuration" doc:id="0e804eb8-888c-46cc-b7cc-13f4ce32c98f" >
+		<http:request-connection protocol="HTTPS" host="login.salesforce.com" port="443" />
+	</http:request-config>
+	<http:request-config name="HTTP_Request_Kimble_API" doc:name="HTTP Request configuration" doc:id="8b0c7362-c2ed-49dc-938b-a8add616d222" >
+		<http:request-connection protocol="HTTPS" host="finastrakimbleinterfacetest.my.salesforce.com" port="443" />
+	</http:request-config>
+	<flow name="kimble-ouath-pocFlow" doc:id="787bede4-bcac-4577-8a81-26a0224d235e" >
+		<http:listener doc:name="Listener" doc:id="216381a2-dcb0-4356-9f99-7f7b8e9c232d" config-ref="HTTP_Listener_config" path="/kimbleOauth"/>
+		<logger level="INFO" doc:name="Logger" doc:id="acf2064f-da82-42a9-80bf-9f1f736784df" message="#['payload']"/>
+		<http:request method="POST" doc:name="Request" doc:id="a228ea47-4c60-4ab8-8b7e-fed611d4c6ac" config-ref="HTTP_Request_configuration" path="/services/oauth2/token">
+			<http:query-params ><![CDATA[#[output application/java
+---
+{
+	"username" : attributes.queryParams.username,
+	"client_secret" : attributes.queryParams.clientSecret,
+	"grant_type" : attributes.queryParams.grant_type,
+	"password" : attributes.queryParams.password,
+	"client_id" : attributes.queryParams.clientId
+}]]]></http:query-params>
+		</http:request>
+		<set-variable value="#[payload.access_token]" doc:name="Set Variable" doc:id="4cd7049e-4322-4d8d-aca3-a9c5717c0e25" variableName="authorizationHeader"/>
+		<http:request method="GET" doc:name="Request" doc:id="b6334754-fdff-43a3-9da8-7e309509cc22" config-ref="HTTP_Request_Kimble_API" path="/services/apexrest/KimbleOne/v1.0/Export/IF05+(Json)+AR">
+			<http:headers ><![CDATA[#[output application/java
+---
+{
+	"Authorization" : "Bearer " ++ vars.authorizationHeader
+}]]]></http:headers>
+		</http:request>
+		<logger level="INFO" doc:name="Logger" doc:id="247827ae-16b8-450a-9c34-2d4aa0942608" message="#['Response from Kimble API is : ' ++ payload]"/>
+	</flow>
+</mule>
