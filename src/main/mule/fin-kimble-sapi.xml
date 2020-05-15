@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mule xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:apikit="http://www.mulesoft.org/schema/mule/mule-apikit" xmlns:http="http://www.mulesoft.org/schema/mule/http" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd http://www.mulesoft.org/schema/mule/mule-apikit http://www.mulesoft.org/schema/mule/mule-apikit/current/mule-apikit.xsd ">
+    <apikit:config name="fin-kimble-sapi-config" api="fin-kimble-sapi.raml" outboundHeadersMapName="outboundHeaders" httpStatusVarName="httpStatus" />
+    <flow name="fin-kimble-sapi-main">
+        <http:listener path="/api/*" config-ref="fin-kimble-sapi-httpListenerConfig">
+            <http:response statusCode="#[vars.httpStatus default 200]">
+                <http:headers><![CDATA[#[vars.outboundHeaders default {}]]]></http:headers>
+            </http:response>
+            <http:error-response statusCode="#[vars.httpStatus default 500]">
+                <http:body><![CDATA[#[payload]]]></http:body>
+                <http:headers><![CDATA[#[vars.outboundHeaders default {}]]]></http:headers>
+            </http:error-response>
+        </http:listener>
+        <flow-ref doc:name="log-resource-flow-entry" doc:id="9e65aed8-e3bc-411c-9410-9dbf89db5d52" name="log-resource-flow-entry"/>
+		<apikit:router config-ref="fin-kimble-sapi-config" />
+    </flow>
+    <flow name="fin-kimble-sapi-console">
+        <http:listener path="/console/*" config-ref="fin-kimble-sapi-httpListenerConfig">
+            <http:response statusCode="#[vars.httpStatus default 200]">
+                <http:headers><![CDATA[#[vars.outboundHeaders default {}]]]></http:headers>
+            </http:response>
+            <http:error-response statusCode="#[vars.httpStatus default 500]">
+                <http:body><![CDATA[#[payload]]]></http:body>
+                <http:headers><![CDATA[#[vars.outboundHeaders default {}]]]></http:headers>
+            </http:error-response>
+        </http:listener>
+        <flow-ref doc:name="log-resource-flow-entry" doc:id="a320ed85-b9c3-4941-9e49-fe160f702c72" name="log-resource-flow-entry"/>
+		<apikit:console config-ref="fin-kimble-sapi-config" />
+    </flow>
+    <flow name="post:\create-invoice:application\json:fin-kimble-sapi-config">
+        <flow-ref doc:name="log-request-received" doc:id="9550618e-d045-4e6f-8004-4cbd539a8612" name="log-request-received"/>
+		<flow-ref doc:name="fin-Kimble-Create-Invoice-InterfaceSub_Flow" doc:id="f3a5730a-8a93-4715-918a-6d216998ebe3" name="fin-Kimble-Create-Invoice-InterfaceSub_Flow"/>
+    </flow>
+    <flow name="post:\credit-memo:application\json:fin-kimble-sapi-config">
+        <ee:transform xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+            <ee:message>
+                <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{
+  message: "Success"
+}]]></ee:set-payload>
+            </ee:message>
+        </ee:transform>
+    </flow>
+</mule>

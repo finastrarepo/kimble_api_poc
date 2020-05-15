@@ -1,0 +1,41 @@
+##Http listener Configuration
+
+http-listener-raml:
+  host: "0.0.0.0"
+  port: "8081"
+  path: "/v1.0/*"
+  
+http-listener-pe:
+  host: "0.0.0.0"
+  port: "8082"
+  path: "/kimble-api"
+
+##Http request configuration
+
+http-request-oauth:
+  host: "login.salesforce.com"
+  port: "443"
+  path: "/services/oauth2/token"
+  
+http-request-kimble-api:
+  host: "finastrakimbleinterfacetest.my.salesforce.com"
+  port: "443"
+  path: "/services/apexrest/KimbleOne/v1.0/Export/IF05+(Json)+AR"
+
+oauth-request:  
+  grant_type: "password"
+  client_id: "![meIyajV2Ht6loLMIVVjcV9W2DBK1O3c/OHzKzEW/AdKTPV3m2mu29C3S2i1Fgid4GCTToTCK4p0/30BiFglWLWVp8CHZy3vFUkKMyN0DehHESWzLWiabt9l7Xo9XlQIF]"
+  client_secret: "![0iFWFC4yON/hOmnttubLEXmucrrdS7+VxKyADzlWANXhrSzJXtUgkIRD4ZA7ojqL7xuaJydAh+HCbm+/WKqpVXu6TkadicPxURHvJlUvzqA=]"
+  username: "![WLBtQt1zxW+vHw61u2mp0sGtaZImHaaHDtWPCvPJrp5QVRzC3Fudh2UYovHKxd9N]"
+  password: "![NbDyv+OYC9B0uq0lNbA9Hg==]"
+
+##MQ Configuration
+mq:
+  url: "https://mq-eu-west-2.anypoint.mulesoft.com/api/v1"
+  client-id: "![Oj/Ww9XAjeCnjSHm4M/7P5tl39HqBFWxOKJ03DM720Cha+XbCa6F6NngEc4LZtdB]"
+  client-secret: "![nRu5ujHYwgGcSPJrPCW9tCavrvY0wmGy0b0xQMGa+t4/icYkkcFkvm/olRuBj180]"
+  queue: "create-invoice-queue"
+  
+process-api:
+  host: "fin-customer-papi-1-0-dev.uk-e1.cloudhub.io"
+  pathInvoice: "/v.10/invoice"

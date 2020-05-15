@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:error-handler-plugin="http://www.mulesoft.org/schema/mule/error-handler-plugin" xmlns:anypoint-mq="http://www.mulesoft.org/schema/mule/anypoint-mq"
+	xmlns:secure-properties="http://www.mulesoft.org/schema/mule/secure-properties"
+	xmlns:http="http://www.mulesoft.org/schema/mule/http" xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/secure-properties http://www.mulesoft.org/schema/mule/secure-properties/current/mule-secure-properties.xsd
+http://www.mulesoft.org/schema/mule/anypoint-mq http://www.mulesoft.org/schema/mule/anypoint-mq/current/mule-anypoint-mq.xsd
+http://www.mulesoft.org/schema/mule/error-handler-plugin http://www.mulesoft.org/schema/mule/error-handler-plugin/current/mule-error-handler-plugin.xsd">
+	<http:listener-config name="fin-kimble-sapi-httpListenerConfig" doc:name="HTTP Listener config" doc:id="11eed1ff-ddf9-4ca1-af45-0e0ae85f1c85" >
+		<http:listener-connection host="0.0.0.0" port="8081" />
+	</http:listener-config>
+	<import doc:name="Import" doc:id="33351a39-4af7-4b3b-89cb-f6f63a9db3c0" file="common-logging-framework.xml" />
+	<http:listener-config name="kimble-CreateInvoice-httpListenerConfig" doc:name="HTTP Listener config" doc:id="f0fd24fe-bb49-4cd2-987d-5cf532f81990" >
+		<http:listener-connection host="${secure::http-listener-pe.host}" port="${secure::http-listener-pe.port}" />
+	</http:listener-config>
+	<http:request-config name="HTTP_Oauth_Authorization" doc:name="HTTP Request configuration" doc:id="4ebe3136-cbe7-49e7-b2d1-9fb40cd9c047" >
+		<http:request-connection protocol="HTTPS" host="${secure::http-request-oauth.host}" port="${secure::http-request-oauth.port}"/>
+	</http:request-config>
+	<secure-properties:config name="Secure_Properties_Config" doc:name="Secure Properties Config" doc:id="4e0cee8f-e327-480b-a42b-73a75ef1602f" file="${env}_properties.yaml" key="${key}" />
+	<http:request-config name="HTTP_Kimble-Rest-API" doc:name="HTTP Request configuration" doc:id="d3ed6223-fbf4-40cf-bffc-d76d31be1111" >
+		<http:request-connection protocol="HTTPS" host="${secure::http-request-kimble-api.host}" port="${secure::http-request-kimble-api.port}" />
+	</http:request-config>
+	<anypoint-mq:config name="Anypoint_MQ_Config" doc:name="Anypoint MQ Config" doc:id="616601ac-fe5a-4e5d-bff4-13b7afbbea82" >
+		<anypoint-mq:connection url="${secure::mq.url}" clientId="${secure::mq.client-id}" clientSecret="${secure::mq.client-secret}" />
+	</anypoint-mq:config>
+	<configuration doc:name="Configuration" doc:id="c1808dee-7164-4a8e-8627-b97ed4f2c236" defaultErrorHandler-ref="global-configurationsError_Handler" />
+	<global-property doc:name="Global Property" doc:id="a23ea3bf-6d47-41ff-84f7-d4d6b2aebd7d" name="env" value="local" />
+	<http:request-config name="process-api-config-http" doc:name="HTTP Request configuration" doc:id="07380928-526c-400f-bb75-700c58bcf647" >
+		<http:request-connection host="#[vars.url.urlHost]" />
+	</http:request-config>
+	<error-handler name="global-configurationsError_Handler" doc:id="88e31bbd-b1bd-42d4-b482-4b9d46a18be3" >
+		<on-error-propagate enableNotifications="true" logException="true" doc:name="On Error Propagate" doc:id="65885ec6-f88b-4d51-806c-fc49c08a4e7b" >
+			<error-handler-plugin:on-error doc:name="Process Error" doc:id="ef286380-d4c2-490c-95f3-42141b606b7d" />
+			<set-variable value="#[attributes.httpStatus]" doc:name="httpStatus" doc:id="33ef6c2e-cda2-4743-97de-9bb60954476e" variableName="httpStatus"/>
+		</on-error-propagate>
+	</error-handler>
+</mule>

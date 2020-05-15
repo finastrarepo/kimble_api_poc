@@ -1,0 +1,132 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xmlns:os="http://www.mulesoft.org/schema/mule/os"
+	xmlns:anypoint-mq="http://www.mulesoft.org/schema/mule/anypoint-mq"
+	xmlns:http="http://www.mulesoft.org/schema/mule/http" xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/anypoint-mq http://www.mulesoft.org/schema/mule/anypoint-mq/current/mule-anypoint-mq.xsd
+http://www.mulesoft.org/schema/mule/os http://www.mulesoft.org/schema/mule/os/current/mule-os.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+	<os:object-store name="Object_store" doc:name="Object store" doc:id="71a799ec-12a7-4900-b069-0109bd8bbc8a" />
+	<flow name="fin-Kimble-Create-Invoice-InterfaceFlow" doc:id="1d498466-23da-44cf-a0bd-505fe565c1f3" >
+		<http:listener doc:name="Listener" doc:id="1616903f-b480-4463-a5ef-74757a4ac0cc" path="${secure::http-listener-pe.path}" config-ref="kimble-CreateInvoice-httpListenerConfig"/>
+		<flow-ref doc:name="log-request-received" doc:id="cd54fb27-9560-46f6-a236-c0b1dc87c820" name="log-request-received"/>
+		<set-variable value="#[uuid()]" doc:name="invoiceCorrelationId" doc:id="b989b355-59c4-4954-b256-00a5019d515d" variableName="invoiceCorrelationId"/>
+		<logger level="INFO" doc:name="Logger" doc:id="f809cdbf-52a4-4c70-9b7e-a09cb72e86bc" message="#['Correlation Id for kimble invoice: ' ++ vars.invoiceCorrelationId]"/>
+		<flow-ref doc:name="fin-Kimble-Create-Invoice-InterfaceSub_Flow" doc:id="351e5a8f-5e13-401a-a4ac-8f8353eecbb2" name="fin-Kimble-Create-Invoice-InterfaceSub_Flow"/>
+	</flow>
+	<sub-flow name="fin-Kimble-Create-Invoice-InterfaceSub_Flow" doc:id="598d1592-f53f-419b-9b50-64d5a86e562a" >
+		<flow-ref doc:name="log-resource-flow-entry" doc:id="d7a1e327-d486-431b-9a8e-a40619208ca5" name="log-resource-flow-entry"/>
+		<os:contains doc:name="Contains" doc:id="54d59f48-b1e7-4edd-ae2c-84facadebb82" key="#['oauth_access_token']" objectStore="Object_store"/>
+		<choice doc:name="Choice" doc:id="459a9654-4241-40d5-b263-f08a25dea9aa" >
+			<when expression="#[payload == true]">
+				<os:retrieve doc:name="Retrieve" doc:id="56e8e7ba-acc3-44c0-90fd-e97be0f8d1e5" key="#['oauth_access_token']" objectStore="Object_store" target="authorizationHeader">
+				</os:retrieve>
+			</when>
+			<otherwise >
+				<flow-ref doc:name="oauth-request-api-call-subflow" doc:id="ed4c721c-6f20-45a0-90d1-a77399148ca9" name="oauth-request-api-call-subflow"/>
+			</otherwise>
+		</choice>
+		<flow-ref doc:name="kimble-invoice-rest-api-subflow" doc:id="a1afd3f9-22db-41ef-8ee4-9f6efa9a8073" name="kimble-invoice-rest-api-subflow"/>
+	</sub-flow>
+	<sub-flow name="oauth-request-api-call-subflow" doc:id="7a524040-d18a-4543-80cc-e55138e68a57" >
+		<until-successful maxRetries="5" doc:name="Until Successful" doc:id="78ec13f2-8093-4955-bd36-a429c2fc3912" >
+			<http:request method="POST" doc:name="Oauth_Request" doc:id="f470c5a0-f7a0-4318-abb1-9e5bd8bd2fb1" config-ref="HTTP_Oauth_Authorization" path="${secure::http-request-oauth.path}">
+			<http:query-params><![CDATA[#[output application/java
+---
+{
+	"username" : p('secure::oauth-request.username'),
+	"client_secret" : p('secure::oauth-request.client_secret'),
+	"grant_type" : p('secure::oauth-request.grant_type'),
+	"password" : p('secure::oauth-request.password'),
+	"client_id" : p('secure::oauth-request.client_id')
+}]]]></http:query-params>
+		</http:request>
+		</until-successful>
+		<set-variable value="#[payload.access_token]" doc:name="authorizationHeader" doc:id="8090369e-3f79-4922-b054-86bfb6662464" variableName="authorizationHeader" />
+		<os:store doc:name="Store" doc:id="cd6c5719-4f8b-4c36-bf93-fc617a1f1e63" key="#['oauth_access_token']" objectStore="Object_store">
+					<os:value><![CDATA[#[vars.authorizationHeader]]]></os:value>
+				</os:store>
+	</sub-flow>
+	<sub-flow name="kimble-invoice-rest-api-subflow" doc:id="927e8370-895e-441f-a186-c3c90d1593fd" >
+		<flow-ref doc:name="log-before-outbound-request" doc:id="db6abbb2-3faa-4f84-b15d-59a58d80eb28" name="log-before-outbound-request"/>
+		<until-successful maxRetries="5" doc:name="Until Successful" doc:id="f5727d26-94ec-47b7-93ff-ea1cd5853056">
+			<http:request method="GET" doc:name="Request" doc:id="9f520df1-c252-4010-97ec-015cf15416c2" config-ref="HTTP_Kimble-Rest-API" path="${secure::http-request-kimble-api.path}">
+			<http:headers><![CDATA[#[output application/java
+---
+{
+	"Authorization" : "Bearer " ++ vars.authorizationHeader
+}]]]></http:headers>
+				<http:response-validator>
+					<http:success-status-code-validator values="200,201,401" />
+				</http:response-validator>
+		</http:request>
+		</until-successful>
+		<flow-ref doc:name="log-after-outbound-request" doc:id="91b36a13-b41f-46ed-ad75-6f81423a67c2" name="log-after-outbound-request"/>
+		<choice doc:name="Choice" doc:id="12e0be03-2d5d-4cff-aba8-19b653d9cfd5">
+			<when expression="#[attributes.statusCode != 401]" >
+				<logger level="INFO" doc:name="Logger" doc:id="21034a6c-d904-4b95-b5b7-8fff42db8e21" message="#['Response from Kimble API : ' ++ payload]" />
+				<ee:transform doc:name="Transform Message" doc:id="217f26f8-3654-4de8-a335-9f4fa4c1b528">
+					<ee:message>
+						<ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+[ {
+  "Quantity" : 0.000,
+  "Rate" : 6000.00,
+  "Line ID" : 1,
+  "Date" : "2020-05-13",
+  "Invoice Number" : "INV000006",
+  "Created From" : "a153z00001EQGmkAAH"
+} ]]]></ee:set-payload>
+					</ee:message>
+				</ee:transform>
+				<anypoint-mq:publish doc:name="Publish" doc:id="a59aae81-8e33-4506-9c56-a145adbd8628" config-ref="Anypoint_MQ_Config" destination="${secure::mq.queue}" />
+			</when>
+			<otherwise >
+				<flow-ref doc:name="oauth-request-api-call-subflow" doc:id="45591df9-1994-4aad-b75a-fcf49f9df7cb" name="oauth-request-api-call-subflow"/>
+				<flow-ref doc:name="kimble-invoice-rest-api-subflow" doc:id="446162f8-63af-42e0-8bce-810cbe6aabd6" name="kimble-invoice-rest-api-subflow"/>
+			</otherwise>
+		</choice>
+	</sub-flow>
+	<flow name="fin-Kimble-Create-Invoice-InterfaceFlow1" doc:id="6775e7ee-6f89-472b-a2d8-5b7c207dc725" >
+		<anypoint-mq:subscriber doc:name="Subscriber" doc:id="46b61606-687f-4006-8976-d951e0a04462" config-ref="Anypoint_MQ_Config" destination="${secure::mq.queue}"/>
+		<flow-ref doc:name="log-before-outbound-request" doc:id="2fec7378-f72d-4630-94d4-50c94287fe27" name="log-before-outbound-request"/>
+		<ee:transform doc:name="Transform Message" doc:id="e303e518-71fd-4a53-8153-81b5ccff357d" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+{
+	"salesOrderId": payload[0].'Created From',
+	"kimbleInvNumber": payload[0].'Invoice Number',
+	"rate": payload[0].Rate,
+	"quantity": payload[0].Quantity,
+	"description": payload[0].Description default '',
+	"currency": payload[0].InvoicingCurrencyCode default '',
+	"invoiceData": payload[0].Date
+}]]></ee:set-payload>
+			</ee:message>
+			<ee:variables >
+				<ee:set-variable variableName="url" ><![CDATA[%dw 2.0
+output application/java
+var host = p('secure::process-api.host')
+var path = p('secure::process-api.pathInvoice')
+---
+{
+	"urlHost": "https://" ++ host ++ path 
+}]]></ee:set-variable>
+			</ee:variables>
+		</ee:transform>
+		<!-- <http:request method="POST" doc:name="Request" doc:id="71c23fee-af79-4a41-aabf-4ec84207cac9" /> -->
+		<logger level="INFO" doc:name="Logger" doc:id="59d71def-1b8f-45e8-a553-c0febb7bbdaa" message="#['Calling process API with payload : ' ++ write(payload,&quot;application/json&quot;)]"/>
+		<until-successful maxRetries="5" doc:name="Until Successful" doc:id="16096206-8f75-416c-a941-d595c5ea3550" >
+			<http:request method="POST" doc:name="Request" doc:id="f0390cac-ae54-4b8b-85fb-dcc636f26646" config-ref="process-api-config-http" url="#[vars.url.urlHost]" />
+		</until-successful>
+		<choice doc:name="Choice" doc:id="862e77ea-3be2-46c5-99a3-ddb58cc36407" >
+			<when expression="#[attributes.statusCode == 200]">
+				<logger level="INFO" doc:name="Logger" doc:id="91e77c8d-fc4a-440a-90f3-4d6ec5e34408" message="#['Received Invoice Id']"/>
+			</when>
+		</choice>
+	</flow>
+</mule>

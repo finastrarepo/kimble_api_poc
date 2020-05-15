@@ -1,0 +1,31 @@
+#%RAML 1.0 DataType
+description: credit-memo information
+properties:
+  createdFrom:
+    displayName: created From
+    type: string
+    required: true
+  
+  creditNoteNumber?:
+    displayName: credit Note Number
+    type: integer | nil
+
+  invoiceDate?:
+    displayName: invoiceDate
+    type: date-only
+
+  description?:
+    displayName: description
+    type: string | nil
+
+  quantity?:
+    displayName: quantity
+    type: integer | nil
+
+  rate?:
+    displayName: rate
+    type: number | nil
+
+  invoicingCurrencyCode?: 
+    displayName: invoicing Currency Code
+    type: string | nil

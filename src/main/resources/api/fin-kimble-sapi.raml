@@ -1,0 +1,44 @@
+#%RAML 1.0
+title: fin-Kimble-sapi
+
+description: This is a System API for Kimble
+
+protocols:
+  - HTTPS
+  - HTTP
+
+baseUri: http://localhost:8081/v1.0
+
+types:
+  create-invoice: !include datatypes/create-invoice-request-dataType.raml
+  creditMemo: !include datatypes/credit-memo-request-dataType.raml
+  successResponse: !include datatypes/response.raml
+
+/create-invoice:
+  description: This endpoint is to send Invoice data from kimble to process API and then to Netsuite.
+  post:
+    body:
+      application/json:
+        type: create-invoice
+        example: !include example/create-invoice-request-example.raml
+    responses:
+      200:
+        body:
+          application/json:
+            type: successResponse
+            example: !include example/create-invoice-response-example.raml
+
+/credit-memo:
+  description: This endpoint is to send memo data from kimble to process API and then to Netsuite.
+
+  post:
+    body:
+      application/json:
+        type: creditMemo
+        example: !include example/credit-memo-request-example.raml
+    responses:
+      200:
+        body:
+          application/json:
+            type: successResponse
+            example: !include example/credit-memo-response-example.raml
